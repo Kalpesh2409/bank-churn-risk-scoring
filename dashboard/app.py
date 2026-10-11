@@ -13,6 +13,28 @@ from src.churn_model import train_model, build_features, test_set_scores, CUTOFF
 
 st.set_page_config(page_title="Bank Churn Risk Dashboard", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    .block-container {max-width: 1150px; padding-top: 2rem; padding-bottom: 3rem;}
+    h1 {color: #1f4e79; font-weight: 800;}
+    h2, h3 {color: #1c2733;}
+    [data-testid="stMetric"] {
+        background: #f3f6fa; border: 1px solid #dde3ec;
+        border-radius: 12px; padding: 14px 18px;
+    }
+    .tier-card {
+        background: #f3f6fa; border-radius: 10px; padding: 14px 18px;
+        margin-top: 10px; border-left: 8px solid #888;
+    }
+    .tier-low {border-left-color: #2e7d32;}
+    .tier-medium {border-left-color: #e08a00;}
+    .tier-high {border-left-color: #c62828;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 @st.cache_resource
 def load_model():
@@ -73,28 +95,36 @@ st.subheader("Result")
 r1, r2 = st.columns(2)
 r1.metric("Churn probability", f"{prob:.1%}")
 r2.metric("Risk tier", tier)
-st.write("Suggested action:", action)
+st.markdown(
+    f"<div class='tier-card tier-{tier.lower()}'><b>{tier} risk.</b> {action}</div>",
+    unsafe_allow_html=True,
+)
 
 st.header("Risk Score Distribution")
 st.caption("How the model's scores spread across 2,000 customers it never saw during training.")
 
-fig, ax = plt.subplots(figsize=(8, 4))
-bins = np.linspace(0, 1, 21)
-ax.hist(scores[actual == 0], bins=bins, color="#9aa5b1", alpha=0.85, label="Actually stayed")
-ax.hist(scores[actual == 1], bins=bins, color="#d1495b", alpha=0.75, label="Actually churned")
-ax.axvline(CUTOFF, color="black", linestyle="--", linewidth=1, label="Cut-off 0.30")
-ax.axvline(prob, color="#1f77b4", linewidth=2.5, label="This customer")
-ax.set_xlabel("Predicted churn probability")
-ax.set_ylabel("Number of customers")
-ax.legend(frameon=False)
-ax.spines[["top", "right"]].set_visible(False)
-st.pyplot(fig)
+left, right = st.columns([3, 2])
 
-st.subheader("Risk tiers on the 2,000 test customers")
-tier_labels = pd.cut(scores, bins=[0, CUTOFF, 0.60, 1.001], right=False,
-                     labels=["Low", "Medium", "High"])
-summary = (pd.DataFrame({"tier": tier_labels, "churned": actual})
-           .groupby("tier", observed=True)
-           .agg(customers=("churned", "size"), real_churners=("churned", "sum")))
-summary["churn rate (%)"] = (summary["real_churners"] / summary["customers"] * 100).round(1)
-st.table(summary)
+with left:
+    fig, ax = plt.subplots(figsize=(7, 3.8))
+    bins = np.linspace(0, 1, 21)
+    ax.hist(scores[actual == 0], bins=bins, color="#9aa5b1", alpha=0.85, label="Actually stayed")
+    ax.hist(scores[actual == 1], bins=bins, color="#d1495b", alpha=0.75, label="Actually churned")
+    ax.axvline(CUTOFF, color="black", linestyle="--", linewidth=1, label="Cut-off 0.30")
+    ax.axvline(prob, color="#1f4e79", linewidth=2.5, label="This customer")
+    ax.set_xlabel("Predicted churn probability")
+    ax.set_ylabel("Number of customers")
+    ax.legend(frameon=False)
+    ax.spines[["top", "right"]].set_visible(False)
+    st.pyplot(fig)
+    plt.close(fig)
+
+with right:
+    st.subheader("Risk tiers (2,000 test customers)")
+    tier_labels = pd.cut(scores, bins=[0, CUTOFF, 0.60, 1.001], right=False,
+                         labels=["Low", "Medium", "High"])
+    summary = (pd.DataFrame({"tier": tier_labels, "churned": actual})
+               .groupby("tier", observed=True)
+               .agg(customers=("churned", "size"), real_churners=("churned", "sum")))
+    summary["churn rate (%)"] = (summary["real_churners"] / summary["customers"] * 100).round(1)
+    st.table(summary)
