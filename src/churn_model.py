@@ -47,3 +47,12 @@ def build_features(raw, feature_order):
         "TenureByAge": raw["Tenure"] / raw["Age"],
     }
     return pd.DataFrame([row])[feature_order]
+
+def test_set_scores(model):
+    df = pd.read_csv(FEATURES_CSV)
+    X = df.drop(columns=["Exited"])
+    y = df["Exited"]
+    _, X_test, _, y_test = train_test_split(
+        X, y, test_size=0.2, stratify=y, random_state=42
+    )
+    return model.predict_proba(X_test)[:, 1], y_test.values
