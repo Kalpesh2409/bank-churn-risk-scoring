@@ -13,19 +13,70 @@ from src.churn_model import train_model, build_features, test_set_scores, CUTOFF
 
 st.set_page_config(page_title="Bank Churn Risk Dashboard", layout="wide")
 
+plt.rcParams.update({
+    "font.family": ["Segoe UI", "DejaVu Sans"],
+    "font.size": 11,
+    "axes.labelsize": 11,
+    "xtick.labelsize": 10.5,
+    "ytick.labelsize": 10.5,
+    "legend.fontsize": 10.5,
+})
+
+FRIENDLY = {
+    "CreditScore": "Credit score",
+    "Age": "Age",
+    "Tenure": "Years with the bank",
+    "Balance": "Account balance",
+    "NumOfProducts": "Number of products",
+    "HasCrCard": "Has a credit card",
+    "IsActiveMember": "Active member",
+    "EstimatedSalary": "Estimated salary",
+    "Geography_Germany": "Country: Germany",
+    "Geography_Spain": "Country: Spain",
+    "Gender_Male": "Gender: male",
+    "BalanceSalaryRatio_log": "Balance-to-salary ratio",
+    "ProductDensity": "Products per year",
+    "EngagementProduct": "Active products",
+    "TenureByAge": "Share of life with the bank",
+}
+
 st.markdown(
     """
     <style>
-    .block-container {max-width: 1150px; padding-top: 2rem; padding-bottom: 3rem;}
-    h1 {color: #1f4e79; font-weight: 800;}
-    h2, h3, h4 {color: #1c2733;}
-    [data-testid="stMetric"] {
-        background: #f3f6fa; border: 1px solid #dde3ec;
-        border-radius: 12px; padding: 14px 18px;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    .stApp, .stApp p, .stApp label, .stApp li, .stApp h1, .stApp h2,
+    .stApp h3, .stApp h4, .stApp input, .stApp table,
+    .stApp [data-testid="stMetricValue"], .stApp [data-testid="stMetricLabel"],
+    .stApp [data-testid="stCaptionContainer"], .stApp [data-baseweb="select"] div {
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
     }
+
+    .block-container {max-width: 1150px; padding-top: 2rem; padding-bottom: 3rem;}
+
+    .hero {
+        background: linear-gradient(135deg, #1f4e79 0%, #2f7bb6 100%);
+        color: #ffffff; padding: 28px 32px; border-radius: 16px; margin-bottom: 1.5rem;
+    }
+    .hero-title {font-size: 2rem; font-weight: 800; letter-spacing: -0.5px;}
+    .hero-sub {font-size: 1rem; opacity: 0.92; margin-top: 6px;}
+
+    h2 {font-size: 1.55rem !important; font-weight: 700 !important; color: #1c2733;
+        border-bottom: 2px solid #e3e8ef; padding-bottom: 0.4rem; margin-top: 1.5rem;}
+    h3 {font-size: 1.25rem !important; font-weight: 600 !important; color: #1c2733;}
+    h4 {font-size: 1.05rem !important; font-weight: 600 !important; color: #1c2733;}
+
+    [data-testid="stCaptionContainer"] {font-size: 0.95rem; color: #5b6776;}
+    [data-testid="stMetric"] {
+        background: #f3f6fa; border: 1px solid #dde3ec; border-radius: 12px;
+        padding: 14px 18px; box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    }
+    [data-testid="stMetricLabel"] {font-size: 0.95rem; color: #5b6776;}
+    [data-testid="stMetricValue"] {font-size: 2rem; font-weight: 700; color: #1f4e79;}
+
     .tier-card {
         background: #f3f6fa; border-radius: 10px; padding: 14px 18px;
-        margin-top: 10px; border-left: 8px solid #888;
+        margin-top: 10px; border-left: 8px solid #888; font-size: 1rem;
     }
     .tier-low {border-left-color: #2e7d32;}
     .tier-medium {border-left-color: #e08a00;}
@@ -49,8 +100,16 @@ def load_scores(_model):
 model, feature_order = load_model()
 scores, actual = load_scores(model)
 
-st.title("Bank Customer Churn Risk Dashboard")
-st.caption("Gradient Boosting model. Risk tiers: Low below 0.30, Medium 0.30 to 0.60, High 0.60 and above.")
+st.markdown(
+    """
+    <div class="hero">
+      <div class="hero-title">Bank Customer Churn Risk Dashboard</div>
+      <div class="hero-sub">Gradient Boosting model &middot; Risk tiers: Low below 0.30
+      &middot; Medium 0.30 to 0.60 &middot; High 0.60 and above</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.header("Churn Risk Calculator")
 
@@ -142,9 +201,9 @@ top = importance.sort_values(ascending=False)
 fl, fr = st.columns([3, 2])
 
 with fl:
-    fig2, ax2 = plt.subplots(figsize=(7, 4.5))
+    fig2, ax2 = plt.subplots(figsize=(7, 4.6))
     shown = importance.sort_values()
-    ax2.barh(shown.index, shown.values, color="#1f4e79")
+    ax2.barh([FRIENDLY[c] for c in shown.index], shown.values, color="#1f4e79")
     ax2.set_xlabel("Share of the model's decisions")
     ax2.spines[["top", "right"]].set_visible(False)
     st.pyplot(fig2)
@@ -153,7 +212,7 @@ with fl:
 with fr:
     st.markdown("#### How to read this")
     st.write(
-        f"**{top.index[0]}** and **{top.index[1]}** together account for "
+        f"**{FRIENDLY[top.index[0]]}** and **{FRIENDLY[top.index[1]]}** together account for "
         f"**{top.iloc[:2].sum():.0%}** of the model's decisions."
     )
     st.write(
