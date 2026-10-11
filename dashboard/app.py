@@ -18,7 +18,7 @@ st.markdown(
     <style>
     .block-container {max-width: 1150px; padding-top: 2rem; padding-bottom: 3rem;}
     h1 {color: #1f4e79; font-weight: 800;}
-    h2, h3 {color: #1c2733;}
+    h2, h3, h4 {color: #1c2733;}
     [data-testid="stMetric"] {
         background: #f3f6fa; border: 1px solid #dde3ec;
         border-radius: 12px; padding: 14px 18px;
@@ -120,11 +120,45 @@ with left:
     plt.close(fig)
 
 with right:
-    st.subheader("Risk tiers (2,000 test customers)")
+    st.markdown("#### Risk tiers (2,000 test customers)")
     tier_labels = pd.cut(scores, bins=[0, CUTOFF, 0.60, 1.001], right=False,
                          labels=["Low", "Medium", "High"])
     summary = (pd.DataFrame({"tier": tier_labels, "churned": actual})
                .groupby("tier", observed=True)
                .agg(customers=("churned", "size"), real_churners=("churned", "sum")))
-    summary["churn rate (%)"] = (summary["real_churners"] / summary["customers"] * 100).round(1)
+    summary = summary.rename(columns={"customers": "Customers",
+                                      "real_churners": "Real churners"})
+    summary["Churn rate (%)"] = (
+        summary["Real churners"] / summary["Customers"] * 100
+    ).map("{:.1f}".format)
+    summary.index.name = "Tier"
     st.table(summary)
+
+st.header("What Drives Churn")
+
+importance = pd.Series(model.feature_importances_, index=feature_order)
+top = importance.sort_values(ascending=False)
+
+fl, fr = st.columns([3, 2])
+
+with fl:
+    fig2, ax2 = plt.subplots(figsize=(7, 4.5))
+    shown = importance.sort_values()
+    ax2.barh(shown.index, shown.values, color="#1f4e79")
+    ax2.set_xlabel("Share of the model's decisions")
+    ax2.spines[["top", "right"]].set_visible(False)
+    st.pyplot(fig2)
+    plt.close(fig2)
+
+with fr:
+    st.markdown("#### How to read this")
+    st.write(
+        f"**{top.index[0]}** and **{top.index[1]}** together account for "
+        f"**{top.iloc[:2].sum():.0%}** of the model's decisions."
+    )
+    st.write(
+        "This chart shows how much each factor matters, not which direction it pushes. "
+        "In our analysis, risk is highest for customers aged about 45 to 65, "
+        "for those holding 3 or 4 products, for customers in Germany, "
+        "and for inactive customers."
+    )
