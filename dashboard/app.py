@@ -97,6 +97,14 @@ def load_scores(_model):
     return test_set_scores(_model)
 
 
+def risk_tier(p):
+    if p >= 0.60:
+        return "High", "Personal call from a relationship manager."
+    if p >= CUTOFF:
+        return "Medium", "Send a low-cost automated retention offer."
+    return "Low", "No action needed."
+
+
 model, feature_order = load_model()
 scores, actual = load_scores(model)
 
@@ -142,13 +150,7 @@ raw = {
 }
 features = build_features(raw, feature_order)
 prob = model.predict_proba(features)[0, 1]
-
-if prob >= 0.60:
-    tier, action = "High", "Personal call from a relationship manager."
-elif prob >= CUTOFF:
-    tier, action = "Medium", "Send a low-cost automated retention offer."
-else:
-    tier, action = "Low", "No action needed."
+tier, action = risk_tier(prob)
 
 st.subheader("Result")
 r1, r2 = st.columns(2)
@@ -158,6 +160,40 @@ st.markdown(
     f"<div class='tier-card tier-{tier.lower()}'><b>{tier} risk.</b> {action}</div>",
     unsafe_allow_html=True,
 )
+
+st.header("What-If Scenario Simulator")
+st.caption(
+    "Change the engagement or product values to see how this customer's risk score moves. "
+    "All other details stay as entered above. This shows how the model's score changes, "
+    "not proof that the change would make the customer stay."
+)
+
+w1, w2 = st.columns(2)
+with w1:
+    new_products = st.slider("Scenario: number of products", 1, 4, int(num_products))
+with w2:
+    new_active = st.selectbox(
+        "Scenario: active member?", ["Yes", "No"],
+        index=0 if is_active == "Yes" else 1,
+    )
+
+scenario = dict(raw)
+scenario["NumOfProducts"] = new_products
+scenario["IsActiveMember"] = int(new_active == "Yes")
+prob2 = model.predict_proba(build_features(scenario, feature_order))[0, 1]
+tier2, action2 = risk_tier(prob2)
+change = (prob2 - prob) * 100
+
+s1, s2, s3 = st.columns(3)
+s1.metric("Current churn probability", f"{prob:.1%}")
+s2.metric("Scenario churn probability", f"{prob2:.1%}",
+          delta=f"{change:+.1f} points", delta_color="inverse")
+s3.metric("Scenario risk tier", tier2)
+
+if tier2 != tier:
+    st.write(f"In this scenario the tier changes from **{tier}** to **{tier2}**. {action2}")
+else:
+    st.write(f"In this scenario the tier stays **{tier}**.")
 
 st.header("Risk Score Distribution")
 st.caption("How the model's scores spread across 2,000 customers it never saw during training.")
