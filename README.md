@@ -4,9 +4,7 @@ A machine learning project that predicts which bank customers are likely to leav
 gives each one a churn probability (0 to 1) and a risk tier, and explains why.
 
 **Live dashboard:** https://kalpesh2409-bank-churn-risk-scoring-dashboardapp-kc1urt.streamlit.app/
-**Research paper (PDF):** https://drive.google.com/file/d/1WQdgrv_ZpKBhyKk6VuGsl6TMcQKSO1pO/view?usp=sharing
 
-Built during the Data Analyst Internship at Unified Mentor.
 
 ## Problem
 Banks usually learn that a customer has left only after the account is closed.
