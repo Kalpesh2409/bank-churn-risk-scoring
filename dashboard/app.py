@@ -186,8 +186,9 @@ change = (prob2 - prob) * 100
 
 s1, s2, s3 = st.columns(3)
 s1.metric("Current churn probability", f"{prob:.1%}")
+delta_text = None if abs(change) < 0.05 else f"{change:+.1f} points"
 s2.metric("Scenario churn probability", f"{prob2:.1%}",
-          delta=f"{change:+.1f} points", delta_color="inverse")
+          delta=delta_text, delta_color="inverse")
 s3.metric("Scenario risk tier", tier2)
 
 if tier2 != tier:
