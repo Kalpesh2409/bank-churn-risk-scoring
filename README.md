@@ -7,9 +7,8 @@ gives each one a churn probability (0 to 1) and a risk tier, and explains why.
 
 
 ## Problem
-Banks usually learn that a customer has left only after the account is closed.
-This project estimates each customer's chance of leaving in advance, so the bank can
-reach out to the right people early.
+The bank knows a customer has left only after they leave. This project builds a model
+that tells in advance which customers may leave, so the bank can reach out early.
 
 ## Data
 10,000 European bank customers, of whom 20.4% churned. Columns include credit score,
